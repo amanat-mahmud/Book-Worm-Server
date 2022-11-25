@@ -28,6 +28,16 @@ async function run(){
             const result = await userCollection.insertOne(user);
             res.send(result);
         })
+        app.get('/user', async (req,res)=>{
+            const email = req.query.email;
+            let query = {}
+            if(email){
+                query = {email:email}
+            }
+            const cursor = userCollection.findOne(query);
+            const result = await cursor;
+            res.send(result);
+        })
         app.get('/jwt', async (req, res) => {
             const email = req.query.email;
             const query = { email: email };
