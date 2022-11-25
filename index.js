@@ -5,6 +5,7 @@ const port = process.env.PORT || 5000;
 require('dotenv').config()
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const jwt = require('jsonwebtoken');
+const { query } = require('express');
 // middle ware
 app.use(cors())
 app.use(express.json());
@@ -18,7 +19,12 @@ async function run(){
     try{
         app.post("/user",async (req,res)=>{
             const user = req.body;
-            // console.log(user);
+            const email = req.body.email;
+            const existingUser = await userCollection.findOne({email:email});
+            if(existingUser)
+            {
+                return res.status(200);
+            }
             const result = await userCollection.insertOne(user);
             res.send(result);
         })
