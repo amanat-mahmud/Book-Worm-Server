@@ -58,9 +58,14 @@ async function run(){
         app.post("/book", async (req,res)=>{
             const book = req.body;
             const result = await bookCollection.insertOne(book);
+            //const test = await userCollection.findOne({email:book.sellerEmail})
             res.send(result);
         })
-        
+        app.get('/myproducts',async(req,res)=>{
+            const email = req.query.email;
+            const result = await bookCollection.find({sellerEmail:email}).toArray();
+            res.send(result)
+        })
     }
     catch{}
     finally{}
