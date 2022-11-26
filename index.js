@@ -34,8 +34,13 @@ async function run(){
             if(email){
                 query = {email:email}
             }
-            const cursor = userCollection.findOne(query);
-            const result = await cursor;
+            const result = await userCollection.findOne(query);
+            res.send(result);
+        })
+        app.get('/users', async (req,res)=>{
+            const role = req.query.role;
+            const query = {role:role}
+            const result = await userCollection.find(query).toArray();
             res.send(result);
         })
         app.get('/jwt', async (req, res) => {
