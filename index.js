@@ -16,6 +16,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 
 async function run(){
     const userCollection = client.db('bookWorm').collection('users');
+    const bookCollection = client.db('bookWorm').collection('books');
     try{
         app.post("/user",async (req,res)=>{
             const user = req.body;
@@ -54,6 +55,12 @@ async function run(){
             }
             res.status(403).send({ accessToken: '' })
         });
+        app.post("/book", async (req,res)=>{
+            const book = req.body;
+            const result = await bookCollection.insertOne(book);
+            res.send(result);
+        })
+        
     }
     catch{}
     finally{}
