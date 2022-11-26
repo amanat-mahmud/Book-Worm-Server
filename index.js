@@ -93,7 +93,6 @@ async function run(){
         })
         app.put('/verify',async(req,res)=>{
             const email = req.query.email;
-            const authHeader = req.headers.authorization;
             const filter = {email:email}
             const options = { upsert: true };
             const updatedDoc = {
@@ -101,9 +100,8 @@ async function run(){
                     verified: 'yes'
                 }
             }
-            const result = await userCollection.updateOne(filter, updatedDoc, options);
-            res.send(result);
-            console.log(authHeader);
+            const user = await userCollection.updateOne(filter, updatedDoc, options);
+            res.send(user);
         })
 }
     
