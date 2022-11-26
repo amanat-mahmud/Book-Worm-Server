@@ -64,9 +64,49 @@ async function run(){
         app.get('/myproducts',async(req,res)=>{
             const email = req.query.email;
             const result = await bookCollection.find({sellerEmail:email}).toArray();
-            res.send(result)
+            res.send(result);
         })
-    }
+        app.get('/mybuyers',async(req,res)=>{
+            const email = req.query.email;
+            let result = [] ;
+            const myProducts = await bookCollection.find({sellerEmail:email}).toArray();
+            // res.send(myProducts)
+            const users = await userCollection.find().toArray()
+            // myProducts.forEach(async (product)=>{
+            //     // console.log(product.buyerEmail);
+            //     let test = await userCollection.findOne(
+            //     {email:product.buyerEmail})
+            //     // console.log(test);
+            //     result = [...result,test]
+            //     // console.log("Inside",result);
+            //     // res.send(result)
+            // })
+            myProducts.forEach((product)=>{
+                users.forEach(user=>{
+                    if(product.buyerEmail===user.email){
+                        result = [...result,user]
+                    }
+                })
+            })
+            console.log(result);
+            res.send(result);   
+        })
+        app.put('/verify',async(req,res)=>{
+            const email = req.query.email;
+            const authHeader = req.headers.authorization;
+            const filter = {email:email}
+            const options = { upsert: true };
+            const updatedDoc = {
+                $set: {
+                    verified: 'yes'
+                }
+            }
+            const result = await userCollection.updateOne(filter, updatedDoc, options);
+            res.send(result);
+            console.log(authHeader);
+        })
+}
+    
     catch{}
     finally{}
 }
