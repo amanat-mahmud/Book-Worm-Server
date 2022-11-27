@@ -17,6 +17,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run(){
     const userCollection = client.db('bookWorm').collection('users');
     const bookCollection = client.db('bookWorm').collection('books');
+    const orderCollection = client.db('bookWorm').collection('orders');
     try{
         app.post("/user",async (req,res)=>{
             const user = req.body;
@@ -31,7 +32,7 @@ async function run(){
         })
         app.get('/user', async (req,res)=>{
             const email = req.query.email;
-            console.log("seller email",email);
+            // console.log("seller email",email);
             let query = {}
             if(email){
                 query = {email:email}
@@ -93,7 +94,6 @@ async function run(){
                     }
                 })
             })
-            console.log(result);
             res.send(result);   
         })
         app.put('/verify',async(req,res)=>{
@@ -117,7 +117,22 @@ async function run(){
         app.get('/books', async(req,res)=>{
             res.send(await bookCollection.find().toArray());
         })
-}
+        app.get('/category/:name', async(req,res)=>{
+            const name = req.params.name;
+            console.log(name);
+            res.send(await bookCollection.find({category:name}).toArray());
+        })
+        app.post('/order',async(req,res)=>{
+            const order = req.body;
+            console.log(order);
+            res.send(await orderCollection.insertOne(order));
+        })
+        app.get('/order', async(req,res)=>{
+            const email = req.query.email;
+            const result =await orderCollection.find({buyerEmail:email}).toArray();
+            res.send(result)
+        })
+}     
     
     catch{}
     finally{}
