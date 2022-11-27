@@ -18,6 +18,7 @@ async function run(){
     const userCollection = client.db('bookWorm').collection('users');
     const bookCollection = client.db('bookWorm').collection('books');
     const orderCollection = client.db('bookWorm').collection('orders');
+    const paymentCollection = client.db('bookWorm').collection('payments');
     try{
         app.post("/user",async (req,res)=>{
             const user = req.body;
@@ -146,7 +147,6 @@ async function run(){
             const booking = req.body;
             const price = booking.product_price;
             const amount = price * 100;
-            console.log(amount);
             const paymentIntent = await stripe.paymentIntents.create({
                 currency: 'usd',
                 amount: amount,
@@ -158,6 +158,20 @@ async function run(){
                 clientSecret: paymentIntent.client_secret,
             });
         });
+        app.put('/payments', async (req, res) =>{
+            const payment = req.body;
+            const result = await paymentCollection.insertOne(payment);
+            await orderCollection.deleteMany({product_id:payment.product_id ,sellerEmail:payment.sellerEmail})
+            const options = { upsert: true };
+            const updatedDoc = {
+                $set: {
+                    buyerEmail: payment.buyerEmail,
+                    available: "no"
+                }
+            }
+            await bookCollection.updateOne({_id:ObjectId(payment.product_id)},updatedDoc,options) 
+            res.send(result);
+        })
 }     
     
     catch{}
