@@ -103,6 +103,12 @@ async function run(){
             const user = await userCollection.updateOne(filter, updatedDoc, options);
             res.send(user);
         })
+        app.delete('/user',async (req,res)=>{
+            const email = req.query.email;
+            const result = await userCollection.deleteOne({email:email});
+            const test = await bookCollection.deleteMany({sellerEmail:email});
+            res.send(result);
+        })
 }
     
     catch{}
