@@ -31,12 +31,17 @@ async function run(){
         })
         app.get('/user', async (req,res)=>{
             const email = req.query.email;
+            console.log("seller email",email);
             let query = {}
             if(email){
                 query = {email:email}
-            }
-            const result = await userCollection.findOne(query);
+                const result = await userCollection.findOne(query);
             res.send(result);
+            }
+            else{
+                res.send(null)
+            }
+            
         })
         app.get('/users', async (req,res)=>{
             const role = req.query.role;
@@ -108,6 +113,9 @@ async function run(){
             const result = await userCollection.deleteOne({email:email});
             const test = await bookCollection.deleteMany({sellerEmail:email});
             res.send(result);
+        })
+        app.get('/books', async(req,res)=>{
+            res.send(await bookCollection.find().toArray());
         })
 }
     
