@@ -37,11 +37,10 @@ async function run(){
     const bookCollection = client.db('bookWorm').collection('books');
     const orderCollection = client.db('bookWorm').collection('orders');
     const paymentCollection = client.db('bookWorm').collection('payments');
+    const reportedBookCollection = client.db('bookWorm').collection('reportedBooks');
     try{
         const verifyAdmin = async (req, res, next) => {
-            console.log("decode",req.decode);
             const decodedEmail = req.decoded.email;
-            console.log(decodedEmail);
             const query = { email: decodedEmail };
             const user = await userCollection.findOne(query);
         
@@ -96,26 +95,16 @@ async function run(){
             const result = await bookCollection.insertOne(book);
             res.send(result);
         })
-        app.get('/myproducts',async(req,res)=>{
+        app.get('/myproducts',verifyJWT, async(req,res)=>{
             const email = req.query.email;
             const result = await bookCollection.find({sellerEmail:email}).toArray();
             res.send(result);
         })
-        app.get('/mybuyers',async(req,res)=>{
+        app.get('/mybuyers',verifyJWT, async(req,res)=>{
             const email = req.query.email;
             let result = [] ;
             const myProducts = await bookCollection.find({sellerEmail:email}).toArray();
-            // res.send(myProducts)
-            const users = await userCollection.find().toArray()
-            // myProducts.forEach(async (product)=>{
-            //     // console.log(product.buyerEmail);
-            //     let test = await userCollection.findOne(
-            //     {email:product.buyerEmail})
-            //     // console.log(test);
-            //     result = [...result,test]
-            //     // console.log("Inside",result);
-            //     // res.send(result)
-            // })
+            const users = await userCollection.find().toArray();
             myProducts.forEach((product)=>{
                 users.forEach(user=>{
                     if(product.buyerEmail===user.email){
@@ -125,8 +114,8 @@ async function run(){
             })
             res.send(result);   
         })
-        app.put('/verify',async(req,res)=>{
-            const email = req.query.email;
+        app.put('/verify',verifyJWT, verifyAdmin, async(req,res)=>{
+            const email = req.query.verify;
             const filter = {email:email}
             const options = { upsert: true };
             const updatedDoc = {
@@ -162,12 +151,12 @@ async function run(){
             console.log(name);
             res.send(await bookCollection.find({category:name}).toArray());
         })
-        app.post('/order',async(req,res)=>{
+        app.post('/order', async(req,res)=>{
             const order = req.body;
             console.log(order);
             res.send(await orderCollection.insertOne(order));
         })
-        app.get('/order', async(req,res)=>{
+        app.get('/order',verifyJWT, async(req,res)=>{
             const email = req.query.email;
             const result =await orderCollection.find({buyerEmail:email}).toArray();
             res.send(result)
@@ -182,7 +171,7 @@ async function run(){
             const result =await bookCollection.find({buyerEmail:email}).toArray();
             res.send(result)
         })
-        app.post('/create-payment-intent', async (req, res) => {
+        app.post('/create-payment-intent',verifyJWT, async (req, res) => {
             const booking = req.body;
             const price = booking.product_price;
             const amount = price * 100;
@@ -197,7 +186,7 @@ async function run(){
                 clientSecret: paymentIntent.client_secret,
             });
         });
-        app.put('/payments', async (req, res) =>{
+        app.put('/payments',verifyJWT, async (req, res) =>{
             const payment = req.body;
             const result = await paymentCollection.insertOne(payment);
             await orderCollection.deleteMany({product_id:payment.product_id ,sellerEmail:payment.sellerEmail})
@@ -210,6 +199,27 @@ async function run(){
             }
             await bookCollection.updateOne({_id:ObjectId(payment.product_id)},updatedDoc,options) 
             res.send(result);
+        })
+        app.post('/report',verifyJWT, async(req,res)=>{
+            const reportedBy = req.body.userEmail;
+            const reportedBook = req.body.book;
+            const sellerEmail = reportedBook.sellerEmail
+            const bookImage = reportedBook.bookImage
+            const bookName = reportedBook.bookName
+            const price = reportedBook.reSalePrice;
+            // console.log(reportedBy, reportedBook);
+            const result = await reportedBookCollection.insertOne({reportedBy,sellerEmail,bookImage,bookName,price})
+            res.send(result)
+        })
+        app.get('/report',verifyJWT, async(req,res)=>{
+            const result = await reportedBookCollection.find().toArray()
+            res.send(result)
+        })
+        app.delete('/report',verifyJWT, verifyAdmin, async(req,res)=>{
+            const id = req.query.id;
+            console.log(id);
+            const result = await reportedBookCollection.deleteOne({_id:ObjectId(id)});
+            res.send(result)
         })
 }     
     
