@@ -118,6 +118,17 @@ async function run(){
         app.get('/books', async(req,res)=>{
             res.send(await bookCollection.find().toArray());
         })
+        app.put('/books/:id', async(req,res)=>{
+            const id = req.params.id;
+            const query ={_id:ObjectId(id)}
+            const options = { upsert: true };
+            const updatedDoc = {
+                $set: {
+                    advertised: "yes",
+                }
+            }
+            res.send(await bookCollection.updateOne(query,updatedDoc,options));
+        })
         app.get('/category/:name', async(req,res)=>{
             const name = req.params.name;
             console.log(name);
