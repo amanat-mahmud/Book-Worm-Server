@@ -13,6 +13,24 @@ const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.kd8d4hj.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
+function verifyJWT(req, res, next) {
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send('unauthorized access');
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'forbidden access' })
+        }
+        req.decoded = decoded;
+        next();
+    })
+
+}
 
 async function run(){
     const userCollection = client.db('bookWorm').collection('users');
@@ -20,6 +38,18 @@ async function run(){
     const orderCollection = client.db('bookWorm').collection('orders');
     const paymentCollection = client.db('bookWorm').collection('payments');
     try{
+        const verifyAdmin = async (req, res, next) => {
+            console.log("decode",req.decode);
+            const decodedEmail = req.decoded.email;
+            console.log(decodedEmail);
+            const query = { email: decodedEmail };
+            const user = await userCollection.findOne(query);
+        
+            if (user?.role !== 'admin') {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+            next();
+        }
         app.post("/user",async (req,res)=>{
             const user = req.body;
             const email = req.body.email;
@@ -33,7 +63,6 @@ async function run(){
         })
         app.get('/user', async (req,res)=>{
             const email = req.query.email;
-            // console.log("seller email",email);
             let query = {}
             if(email){
                 query = {email:email}
@@ -65,7 +94,6 @@ async function run(){
         app.post("/book", async (req,res)=>{
             const book = req.body;
             const result = await bookCollection.insertOne(book);
-            //const test = await userCollection.findOne({email:book.sellerEmail})
             res.send(result);
         })
         app.get('/myproducts',async(req,res)=>{
@@ -109,8 +137,8 @@ async function run(){
             const user = await userCollection.updateOne(filter, updatedDoc, options);
             res.send(user);
         })
-        app.delete('/user',async (req,res)=>{
-            const email = req.query.email;
+        app.delete('/user',verifyJWT,verifyAdmin,  async (req,res)=>{
+            const email = req.query.delete;
             const result = await userCollection.deleteOne({email:email});
             const test = await bookCollection.deleteMany({sellerEmail:email});
             res.send(result);
